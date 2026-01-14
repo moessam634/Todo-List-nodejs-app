@@ -1,0 +1,30 @@
+# dependencies
+node_modules
+npm-debug.log
+yarn.lock
+pnpm-lock.yaml
+
+# env files (never bake secrets)
+.env
+.env.*
+*.pem
+*.key
+
+# git + CI
+.git
+.gitignore
+.github
+
+# local tooling / docs
+README.md
+*.md
+
+# infra folders (if you add them later)
+ansible
+k8s
+argocd
+
+# OS/editor noise
+.DS_Store
+*.swp
+
