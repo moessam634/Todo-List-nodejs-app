@@ -70,40 +70,110 @@ Start the Server
 ![225239221-caf86f3d-ef17-4d18-80a6-c72123ff5444](https://github.com/Ankit6098/Todos-nodejs/assets/92246613/2ee90ab0-95d4-44f4-80ac-b17b088ac1ce)
 ![225239406-98b7ba7d-df97-4d27-bb66-596a32187d87](https://github.com/Ankit6098/Todos-nodejs/assets/92246613/960ff353-1ce9-4ef8-94e4-10af09184fd2)
 ![225239841-4b5d77f0-4a54-4339-b6b3-b6a1be6776b5](https://github.com/Ankit6098/Todos-nodejs/assets/92246613/f5ffc3b8-480f-4d11-9a0b-c469e3c17e8e)
+## DevOps Documentation (CI/CD + GitOps)
+
+This section documents the DevOps work done for this project: Docker containerization, CI pipeline to publish images to Docker Hub, and GitOps deployment to a K3s Kubernetes cluster using ArgoCD.
+
+---
+
+### 1) Containerization (Docker)
+
+The application is containerized using the `Dockerfile` in the repository. The same image is used for local runs, CI builds, and Kubernetes deployments.
+
+---
+
+### 2) CI Pipeline (GitHub Actions → Docker Hub)
+
+Workflow file:
+- `.github/workflows/ci-pipeline.yml`
+
+Trigger:
+- Runs automatically on each `push` to the `master` branch.
+
+Pipeline steps:
+1. Checkout repository
+2. Login to Docker Hub using GitHub Actions secrets
+3. Build Docker image using Buildx
+4. Push Docker image to Docker Hub with two tags:
+   - `latest`
+   - `${{ github.sha }}` (commit SHA tag)
+
+#### Required GitHub Secrets
+
+Configure in:
+**Repo → Settings → Secrets and variables → Actions → Repository secrets**
+
+Add these secrets (case-sensitive):
+- `DOCKERHUB_USERNAME` = your Docker Hub username (example: `mohamedessam122002`)
+- `DOCKERHUB_TOKEN` = Docker Hub Personal Access Token (PAT) with **Write** permission
+
+> Important: The Docker image tag must use your **Docker Hub namespace** (username), not your GitHub username.
+
+Example tags:
+- `mohamedessam122002/todo-list-nodejs-app:latest`
+- `mohamedessam122002/todo-list-nodejs-app:${{ github.sha }}`
+
+---
+
+### 3) Kubernetes Manifests (K3s)
+
+Kubernetes manifests are stored under:
+- `k8s/`
+
+Includes:
+- `Namespace` (`todo`)
+- `Deployment` (runs the application container)
+- `Service` (exposes the app)
+- `Secret` (MongoDB connection string)
+
+MongoDB connection is injected using an environment variable (example used in this project: `mongoDbUrl`) from a Kubernetes Secret.
+
+---
+
+### 4) GitOps Deployment (ArgoCD)
+
+ArgoCD is used to deploy the app to the K3s cluster using GitOps.
+
+- ArgoCD watches this GitHub repo and syncs the manifests from the `k8s/` folder.
+- The ArgoCD Application was configured with:
+  - `syncPolicy.automated` (auto-sync)
+  - `CreateNamespace=true` (namespace can be created automatically)
+
+---
+
+### 5) Accessing the Application
+
+The application is exposed using a Kubernetes Service (NodePort).
+
+Example:
+- `http://<EC2_PUBLIC_IP>:30080`
+
+If the app is running but not reachable:
+- Ensure EC2 **Security Group inbound rules** allow the NodePort (e.g., TCP `30080`).
+- Verify:
+  ```bash
+  sudo k3s kubectl get pods -n todo
+  sudo k3s kubectl get svc -n todo -o wide
+  ```
+
+---
+
+### 6) Useful Troubleshooting Commands
+
+```bash
+# Pods & logs
+sudo k3s kubectl get pods -n todo -o wide
+sudo k3s kubectl logs -n todo -l app=todo-web --tail=200
+
+# Service details
+sudo k3s kubectl get svc -n todo -o wide
+sudo k3s kubectl describe svc todo-web -n todo
+
+# Test from inside cluster
+sudo k3s kubectl run -n todo curl --rm -it --image=curlimages/curl --restart=Never -- \
+  curl -sv http://todo-web:80
+```
 
 
-## Related
 
-Here are some other projects
-
-[Alarm CLock - javascript](https://github.com/Ankit6098/Todos-nodejs)\
-[IMDb Clone - javascript](https://github.com/Ankit6098/IMDb-Clone)
-
-
-## 🚀 About Me
-I'm a full stack developer...
-
-
-# Hi, I'm Ankit! 👋
-
-I'm a full stack developer 😎 ... Love to Develop Classic Unique fascinating and Eye Catching UI and Love to Create Projects and Building logics.
-## 🔗 Links
-[![portfolio](https://img.shields.io/badge/my_portfolio-000?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ankithub.me/Resume/)
-
-[![linkedin](https://img.shields.io/badge/linkedin-0A66C2?style=for-the-badge&logo=linkedin&logoColorwhite=)](https://www.linkedin.com/in/ankit-vishwakarma-6531221b0/)
-
-
-## Other Common Github Profile Sections
-🧠 I'm currently learning FullStack Developer Course from Coding Ninjas
-
-📫 How to reach me ankitvis609@gmail.com
-
-
-## 🛠 Skills
-React, Java, Javascript, HTML, CSS, Nodejs, ExpressJs, Mongodb, Mongoose...
-
-
-## Feedback
-
-If you have any feedback, please reach out to us at ankitvis609@gmail.com
 
