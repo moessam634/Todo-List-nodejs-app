@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: todo-web
-          image: moessam634/todo-list-nodejs-app:latest
+          image: mohamedessam122002/todo-list-nodejs-app:latest
           ports:
             - containerPort: 4000
           env:
